@@ -1,0 +1,458 @@
+
+body {
+  background: black;
+  color: white;
+  font-family: 'Segoe UI', sans-serif;
+  height: 1000vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === CAMERA === */
+#camera-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  display: none;
+}
+
+#camera {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.3) contrast(1.1);
+}
+
+/* === CAMERA CONTROLS === */
+#camera-controls {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 10px 16px;
+  border-radius: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#camera-controls button,
+#camera-controls select {
+  background: #222;
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+#camera-controls button:hover,
+#camera-controls select:hover {
+  background: #444;
+  transform: scale(1.05);
+}
+
+#camera-controls select {
+  color: white;
+  background-color: #333;
+}
+
+/* === PROMPTER TEXT === */
+#prompter {
+  position: relative;
+  z-index: 1;
+  padding: 100px 60px;
+  font-size: 32px;
+  line-height: 1.6;
+  overflow-y: scroll;
+  height: calc(100vh - 200px);
+  transition: font-size 0.2s, transform 0.3s;
+  direction: ltr;
+  white-space: pre-wrap;
+  scrollbar-width: thin;
+  scrollbar-color: #666 #111;
+}
+
+#prompter::-webkit-scrollbar {
+  width: 6px;
+}
+#prompter::-webkit-scrollbar-thumb {
+  background-color: #666;
+  border-radius: 3px;
+}
+
+/* === CONTROLS === */
+#controls {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: rgba(20, 20, 20, 0.95);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  z-index: 2;
+}
+
+button {
+  background: #333;
+  border: none;
+  color: white;
+  font-size: 18px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button i {
+  font-size: 20px;
+}
+
+button:hover {
+  background: #555;
+  transform: scale(1.05);
+}
+
+button.active {
+  background: red;
+}
+
+input[type="range"] {
+  width: 140px;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #ccc;
+  font-size: 13px;
+  gap: 4px;
+}
+
+.slider-group label {
+  font-weight: 500;
+}
+
+#scrollTimer {
+  font-size: 14px;
+  color: #ccc;
+  text-align: center;
+  padding: 4px 12px;
+  background: #222;
+  border-radius: 6px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* === LIGHT THEME === */
+body.light-theme {
+  background: white;
+  color: black;
+}
+
+body.light-theme #controls {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+body.light-theme button {
+  background: #ddd;
+  color: black;
+}
+
+body.light-theme #scrollTimer {
+  background: #eee;
+  color: #333;
+}
+
+/* === VIDEO FILTERS === */
+.filter-noir         { filter: grayscale(1) contrast(1.2); }
+.filter-sepia        { filter: sepia(1); }
+.filter-cold         { filter: hue-rotate(180deg) saturate(1.2); }
+.filter-warm         { filter: hue-rotate(-20deg) saturate(1.3); }
+.filter-bw           { filter: grayscale(1) contrast(1.8); }
+.filter-grain        { filter: contrast(1.1) brightness(0.95); }
+.filter-cartoon      { filter: contrast(1.4) saturate(1.2); }
+.filter-invert       { filter: invert(1); }
+.filter-night        { filter: brightness(0.4) hue-rotate(90deg); }
+.filter-glitch       { filter: contrast(2) hue-rotate(90deg) saturate(2); }
+.filter-neon         { filter: brightness(1.2) saturate(2); }
+.filter-vhs          { filter: contrast(1.2) brightness(0.9); }
+.filter-glow         { filter: brightness(1.4) blur(1px); }
+.filter-cinematic    { filter: contrast(1.3) saturate(1.1) sepia(0.1); }
+.filter-dreamy       { filter: blur(2px) brightness(1.1); }
+.filter-saturate     { filter: saturate(3); }
+.filter-desaturate   { filter: saturate(0.4); }
+.filter-infrared     { filter: hue-rotate(180deg) invert(0.9); }
+.filter-duotone      { filter: grayscale(1) contrast(1.5) brightness(1.2); }
+.filter-matrix       { filter: hue-rotate(110deg) brightness(0.7); }
+
+body.focus-mode #controls,
+body.focus-mode #camera-controls,
+body.focus-mode .slider-group {
+  display: none !important;
+}
+
+body.focus-mode #prompter {
+  padding: 60px 40px;
+  font-size: 36px;
+}
+
+body.focus-mode #camera {
+  filter: brightness(0.6);
+}
+
+@media screen and (orientation: landscape) {
+  #prompter {
+    font-size: 36px;
+    line-height: 1.8;
+    padding: 40px 80px;
+  }
+}
+
+body.focus-mode #controls {
+  justify-content: flex-start;
+  padding: 10px;
+  background: transparent;
+}
+
+body.focus-mode #controls button {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.focus-mode #toggleUIBtn {
+  opacity: 0.3;
+  pointer-events: auto;
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+body.focus-mode #toggleUIBtn:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+#toggleUIBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  opacity: 0.8;
+  background-color: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: white;
+  font-size: 20px;
+  padding: 10px;
+  border-radius: 50%;
+  transition: opacity 0.3s ease;
+}
+
+#toggleUIBtn:hover {
+  opacity: 1;
+}
+
+body.focus-mode #camera-controls {
+  display: none !important;
+}
+
+body.focus-mode #toggleUIBtn {
+  display: block !important;
+  top: 10px;
+  left: 10px;
+  opacity: 0.2;
+  background-color: transparent;
+}
+
+@media screen and (max-width: 600px) {
+  button {
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+
+  .slider-group label {
+    font-size: 11px;
+  }
+
+  input[type="range"] {
+    width: 100px;
+  }
+
+  #camera-controls button,
+  #camera-controls select {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+}
+
+/* === SLIDERS CUSTOM STYLE === */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 140px;
+  height: 6px;
+  background: #444;
+  border-radius: 8px;
+  outline: none;
+  transition: background 0.3s;
+  cursor: pointer;
+}
+
+input[type="range"]:hover {
+  background: #666;
+}
+
+/* Thumb - Chrome, Safari, Edge */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #a7a7a7;
+  border: 2px solid white;
+  transition: transform 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Thumb - Firefox */
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3a3a3a;
+  border: 2px solid white;
+  transition: transform 0.2s;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+@media screen and (max-width: 768px) {
+  /* === TOP BAR: HIDE (stânga) & CAMERA (dreapta) === */
+  #top-bar {
+    position: fixed;
+    top: 10px;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 12px;
+    height: 44px;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  #top-bar button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    font-size: 16px;
+    padding: 5px 8px;
+    border-radius: 8px;
+  }
+
+  /* === CONTROLS: 2 RÂNDURI X 4 BUTOANE === */
+  #controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+    padding: 6px 8px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: auto;
+    gap: 4px;
+    justify-items: center;
+    align-items: center;
+  }
+
+  #controls button {
+    font-size: 12px;
+    padding: 6px;
+    border-radius: 6px;
+    width: 100%;
+  }
+
+  #controls button i {
+    font-size: 14px;
+  }
+
+  /* === SLIDERE PE ACELAȘI RÂND === */
+  .slider-group {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    font-size: 11px;
+    color: white;
+    padding: 4px 6px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+  }
+
+  .slider-group:nth-of-type(2) {
+    align-items: flex-end;
+  }
+
+  .slider-group input[type="range"] {
+    width: 100px;
+    height: 6px;
+    accent-color: #4fc3f7;
+  }
+
+  /* === TIMER PE RÂND DEDICAT === */
+  #scrollTimer {
+    grid-column: span 4;
+    font-size: 11px;
+    padding: px 6px;
+    color: white;
+    text-align: center;
+    width: 100%;
+  }
+
+  /* === UI TOGGLE SUS STÂNGA === */
+  #toggleUIBtn {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 1001;
+    opacity: 0.7;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 6px 8px;
+    font-size: 16px;
+    border-radius: 6px;
+    max-width: 270px;
+    max-height: 40px;
+  }
+
+  #toggleUIBtn:hover {
+    opacity: 1;
+  }
+}
