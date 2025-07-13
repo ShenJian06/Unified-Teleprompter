@@ -115,11 +115,19 @@ stopBtn.addEventListener('click', () => {
 });
 
 // === FILTRE VIDEO ===
+const camera = document.getElementById('camera');
+
 filterSelect.addEventListener('change', () => {
-  const filter = filterSelect.value;
-  cameraVideo.className = '';
-  if (filter !== 'none') cameraVideo.classList.add('filter-' + filter);
+  // Elimină toate clasele de filtrare
+  camera.className = '';
+  
+  // Adaugă noua clasă (dacă nu e "none")
+  const selectedFilter = filterSelect.value;
+  if (selectedFilter !== 'none') {
+    camera.classList.add(`filter-${selectedFilter}`);
+  }
 });
+
 
 // === FONT SIZE ===
 fontSizeSlider.addEventListener('input', () => {
@@ -323,3 +331,11 @@ switchCameraBtn.addEventListener('click', () => {
   const newMode = currentFacingMode === 'user' ? 'environment' : 'user';
   startCamera(newMode);
 });
+
+navigator.mediaDevices.getUserMedia({ audio: true })
+  .then(stream => {
+    // folosești stream-ul audio aici
+  })
+  .catch(err => {
+    console.error("Microfonul nu poate fi accesat:", err);
+  });
