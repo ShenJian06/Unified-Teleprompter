@@ -11,20 +11,19 @@ body {
 
 /* === CAMERA === */
 #camera-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 10;
-  display: none;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: block;
 }
 
 #camera {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.3) contrast(1.1);
+  filter: brightness(0.65); /* întunecat ușor pentru citire text */
 }
 
 /* === CAMERA CONTROLS === */
@@ -67,18 +66,18 @@ body {
 
 /* === PROMPTER TEXT === */
 #prompter {
-  position: relative;
-  z-index: 1;
-  padding: 100px 60px;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  padding: 5vh 5vw;
+  overflow-y: scroll;
+  color: white;
   font-size: 32px;
   line-height: 1.6;
-  overflow-y: scroll;
-  height: calc(100vh - 200px);
-  transition: font-size 0.2s, transform 0.3s;
-  direction: ltr;
-  white-space: pre-wrap;
-  scrollbar-width: thin;
-  scrollbar-color: #666 #111;
+  background: transparent;
+  pointer-events: none;
 }
 
 #prompter::-webkit-scrollbar {
@@ -91,17 +90,20 @@ body {
 
 /* === CONTROLS === */
 #controls {
-  position: fixed;
+  position: absolute;
   bottom: 0;
+  left: 0;
   width: 100%;
-  background: rgba(20, 20, 20, 0.95);
+  background: rgba(0,0,0,0.5);
+  padding: 10px;
+  z-index: 3;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   align-items: center;
-  gap: 14px;
-  padding: 12px 20px;
-  z-index: 2;
+  gap: 10px;
+  justify-content: center;
+  color: white;
+  backdrop-filter: blur(8px);
 }
 
 button {
@@ -301,6 +303,7 @@ body.focus-mode #toggleUIBtn {
   #camera-controls select {
     font-size: 14px;
     padding: 6px 10px;
+    z-index: 10;
   }
 }
 
@@ -378,7 +381,7 @@ input[type="range"]::-moz-range-thumb:hover {
   /* === CONTROLS: 2 RÂNDURI X 4 BUTOANE === */
  #controls {
   display: grid;
-  grid-template-columns: repeat(4, 0,8fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px; /* mai mic decât înainte (ex: 4px sau 2px) */
   padding: 8px 4px;
   margin-left: -4%;
@@ -436,7 +439,7 @@ input[type="range"]::-moz-range-thumb:hover {
   /* === UI TOGGLE === */
   #toggleUIBtn {
     position: fixed;
-    top: 12px;
+    top: 120px;
     left: 12px;
     z-index: 1001;
     opacity: 0.7;
