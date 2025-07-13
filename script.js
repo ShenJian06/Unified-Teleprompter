@@ -294,3 +294,32 @@ document.addEventListener('dblclick', () => {
   document.body.classList.toggle('focus-mode');
 });
 
+const switchCameraBtn = document.getElementById('switchCameraBtn');
+
+let currentFacingMode = 'user'; // user = front, environment = back
+
+async function startCamera(facingMode = 'user') {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+  }
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { exact: facingMode } },
+      audio: false
+    });
+    cameraVideo.srcObject = cameraStream;
+    currentFacingMode = facingMode;
+  } catch (err) {
+    console.error('Camera access error:', err);
+  }
+}
+
+// Start with front camera
+startCamera();
+
+// Toggle camera button
+switchCameraBtn.addEventListener('click', () => {
+  const newMode = currentFacingMode === 'user' ? 'environment' : 'user';
+  startCamera(newMode);
+});
