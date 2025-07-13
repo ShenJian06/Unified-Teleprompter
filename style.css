@@ -391,14 +391,14 @@ input[type="range"]::-moz-range-thumb:hover {
  #controls {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px; /* mai mic decât înainte (ex: 4px sau 2px) */
-  padding: 8px 4px;
-  margin-left: -4%;
+  gap: 6px; /* mai mic decât înainte (ex: 4px sau 2px) */
+  padding: 15px 4px;
+  margin-left:-4%;
 }
 
 #controls button {
   font-size: 12px;
-  padding: 8px;
+  padding: 20px;
   width: 100%;   /* mai mic = mai mult spațiu între ele */
   margin: 0 auto; /* ca să fie centrate în celulă */
   border-radius: 6px;
