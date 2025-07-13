@@ -1,3 +1,9 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* blochează scroll global */
+  height: 100%;
+}
 
 body {
   background: black;
@@ -11,55 +17,54 @@ body {
 
 /* === CAMERA === */
 #camera-container {
-  position: absolute;
-  top: 0; left: 0;
+  position: relative;
   width: 100%;
-  height: 100%;
-  z-index: 1;
-  display: block;
+  height: 100vh;
+  background: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 0;
 }
 
 #camera {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.65); /* întunecat ușor pentru citire text */
 }
-
 /* === CAMERA CONTROLS === */
 #camera-controls {
   position: absolute;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 10px 16px;
-  border-radius: 12px;
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px 16px;
+  border-radius: 8px;
+  z-index: 3;
+  flex-wrap: wrap; /* opțional pentru responsive */
 }
 
-#camera-controls button,
-#camera-controls select {
-  background: #222;
-  border: none;
+#camera-controls select,
+#camera-controls button {
+  background: #111;
   color: white;
-  padding: 8px 12px;
-  font-size: 16px;
-  border-radius: 8px;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 14px;
   cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
 }
 
 #camera-controls button:hover,
 #camera-controls select:hover {
-  background: #444;
-  transform: scale(1.05);
+  background-color: #444;
 }
 
 #camera-controls select {
+  max-width: 180px;
   color: white;
   background-color: #333;
 }
@@ -67,18 +72,21 @@ body {
 /* === PROMPTER TEXT === */
 #prompter {
   position: absolute;
-  top: 0; left: 0;
+  top: 80px; /* spațiu liber sub butoanele camerei */
+  left: 0;
   width: 100%;
-  height: 100%;
-  z-index: 2;
-  padding: 5vh 5vw;
-  overflow-y: scroll;
+  height: calc(90% - 80px); /* restul e zona de prompter */
+  z-index: 40;
+  padding: 4vh 5vw 5vh; /* mai mic sus, dar rămâne aerisit */
+  overflow-y: auto;
   color: white;
   font-size: 32px;
   line-height: 1.6;
   background: transparent;
-  pointer-events: none;
+  pointer-events: auto;
 }
+
+
 
 #prompter::-webkit-scrollbar {
   width: 6px;
@@ -267,6 +275,7 @@ body.focus-mode #toggleUIBtn:hover {
   padding: 10px;
   border-radius: 50%;
   transition: opacity 0.3s ease;
+  display: none !important;
 }
 
 #toggleUIBtn:hover {
@@ -455,3 +464,18 @@ input[type="range"]::-moz-range-thumb:hover {
     opacity: 1;
   }
 }
+
+@media screen and (max-width: 600px) {
+  #prompter {
+    top: 80px; /* lasă spațiu pentru butoanele camerei */
+    height: calc(60% - 80px); /* ajustează înălțimea */
+    padding: 4vh 6vw;
+    font-size: 24px;
+  }
+
+  body.focus-mode #prompter {
+    padding: 30px 20px;
+    font-size: 28px;
+  }
+}
+
