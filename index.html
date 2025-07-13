@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Unified Teleprompter</title>
@@ -14,6 +13,7 @@
   <div id="camera-container" style="display: none;">
     <video id="camera" autoplay muted playsinline></video>
     <div id="camera-controls">
+      <button id="switchCameraBtn" title="Switch Camera"><i class="fas fa-camera-rotate"></i></button>
       <button id="recordBtn" title="Record"><i class="fas fa-circle"></i></button>
       <button id="pauseBtn" title="Pause"><i class="fas fa-pause"></i></button>
       <button id="stopBtn" title="Stop"><i class="fas fa-square"></i></button>
@@ -60,8 +60,6 @@
     <input type="file" id="uploadInput" accept=".txt" style="display:none">
     <button id="downloadTxtBtn" title="Download .txt"><i class="fas fa-file-download"></i></button>
     <button id="toggleUIBtn" title="Hide UI"><i class="fas fa-eye-slash"></i></button>
-    
-
 
     <div class="slider-group">
       <label for="speed">Speed: <span id="speedValue">40</span></label>
