@@ -1,4 +1,4 @@
-/* Unified Teleprompter Mobile (Overlay + Voice) — FIX 2025 */
+/* Unified Teleprompter Mobile (Overlay + Voice) — STOP la ultimele 2 rânduri + scroll manual OK */
 (() => {
   const qs = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
@@ -10,7 +10,7 @@
   const prompt = qs('#prompt');
   const statusChip = qs('#statusChip');
 
-  // Top/dock buttons
+  // Buttons
   const btnCam = qs('#btnCam');
   const btnStart = qs('#btnStart');
   const btnPause = qs('#btnPause');
@@ -29,7 +29,7 @@
   const fcUp = qs('#fcUp');
   const fcDown = qs('#fcDown');
 
-  // Sheet (editor & controls)
+  // Sheet (editor)
   const sheet = qs('#sheet');
   const editor = qs('#editor');
   const btnPrepare = qs('#btnPrepare');
@@ -37,6 +37,7 @@
   const btnSave = qs('#btnSave');
   const fileInput = qs('#fileInput');
 
+  // Controls in sheet
   const speed = qs('#speed');
   const speedVal = qs('#speedVal');
   const fontSize = qs('#fontSize');
@@ -53,7 +54,6 @@
   let lastTs = 0;
   let scrollPxPerSec = +speed.value;
   let rafId = null;
-
   let mirrorH = false, mirrorV = false;
 
   // Voice
@@ -61,12 +61,34 @@
   let recognition = null;
 
   // Auto-pause safety
-  let autoPauseToken = 0;       // id pentru pauza curentă
-  let pausedByAuto = false;     // doar auto-pauza poate relua automat
+  let autoPauseToken = 0;
+  let pausedByAuto = false;
 
   // ===== Helpers =====
   const clamp = (n,min,max) => Math.max(min, Math.min(max, n));
   const setStatus = t => { statusChip.textContent = t; };
+
+  // Linie de bază pentru „ultimele 2 rânduri”
+  function getLineHeightPx(){
+    const cs = getComputedStyle(prompt);
+    let lh = cs.lineHeight;
+    if (lh === 'normal'){
+      // fallback simplu: factor 1.3 din mărimea fontului
+      lh = parseFloat(cs.fontSize) * 1.3;
+    } else {
+      lh = parseFloat(lh);
+    }
+    return lh || 32;
+  }
+  function getMaxAutoScrollTop(){
+    // oprește când ultimele 2 rânduri sunt vizibile
+    const max = prompt.offsetHeight - viewport.clientHeight - getLineHeightPx()*2;
+    return Math.max(0, Math.floor(max));
+  }
+  function clampToMaxEnd(){
+    const maxTop = getMaxAutoScrollTop();
+    if (viewport.scrollTop > maxTop) viewport.scrollTop = maxTop;
+  }
 
   function applyStyleFromControls(){
     prompt.style.fontSize  = `${+fontSize.value}px`;
@@ -76,11 +98,10 @@
     fontVal.textContent  = String(fontSize.value);
     lhVal.textContent    = (+lineHeight.value).toFixed(1);
     padVal.textContent   = String(hPadding.value);
-    // realiniază „cuvântul activ”
+    clampToMaxEnd();        // dacă ai mărit fontul, recalculează limită
     updateActiveWord();
   }
 
-  // Construiește promptul cu <span class="word"> și blocuri de PAUSE
   function buildPromptFromEditor(){
     const escapeHtml = s => s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     const raw = editor.value.replace(/\r\n/g, '\n').replace(/\t/g, '    ');
@@ -111,7 +132,6 @@
     if (best) best.classList.add('active');
   }
 
-  // Auto-pauze: reia doar dacă pauza a fost declanșată de sistem și nu ai apăsat tu pauză între timp
   function handleAutoPauses(){
     const midY = viewport.getBoundingClientRect().top + viewport.clientHeight/2;
     for (const p of qsa('.pause')){
@@ -124,13 +144,10 @@
         const prevSpeed = scrollPxPerSec;
 
         pausedByAuto = true;
-        pauseRun(false); // false => nu schimba status-ul dacă vrei; dar îl lăsăm „Paused”
+        pauseRun(false);
         setStatus(`Paused (${sec}s)`);
 
         setTimeout(()=>{
-          // reia doar dacă:
-          // - încă există același token (nu a apărut altă pauză)
-          // - încă suntem în auto-pause (user nu a apăsat manual)
           if (token === autoPauseToken && pausedByAuto){
             scrollPxPerSec = prevSpeed;
             resumeRun();
@@ -148,11 +165,14 @@
     lastTs = ts;
 
     handleAutoPauses();
-    viewport.scrollTop += scrollPxPerSec * dt; // urcare ca teleprompter
+
+    const maxTop = getMaxAutoScrollTop();
+    const nextTop = Math.min(viewport.scrollTop + scrollPxPerSec * dt, maxTop);
+    viewport.scrollTop = nextTop;
+
     updateActiveWord();
 
-    const maxScroll = prompt.offsetHeight - viewport.clientHeight + 10;
-    if (viewport.scrollTop >= maxScroll){
+    if (nextTop >= maxTop - 0.5){
       stopRun();
       setStatus('Done');
       return;
@@ -172,11 +192,8 @@
   async function startRun(){
     if (!prepared) prepareRun();
 
-    // Countdown dacă este setat
     const cd = clamp(+countdownInput.value || 0, 0, 10);
-    if (cd > 0){
-      await countdownOverlay(cd);
-    }
+    if (cd > 0) await countdownOverlay(cd);
 
     running = true;
     pausedByAuto = false;
@@ -190,9 +207,8 @@
     running = false;
     cancelAnimationFrame(rafId);
     if (manual){
-      // dacă ai pus pauză tu, nu mai reluăm automat o auto-pauză aflată în curs
       pausedByAuto = false;
-      autoPauseToken++; // invalidează orice pauză programată
+      autoPauseToken++;
     }
     setStatus('Paused');
   }
@@ -214,7 +230,7 @@
     stopRun();
     viewport.scrollTop = 0;
     qsa('.pause').forEach(p => delete p.dataset.done);
-    prepared = true; // promptul rămâne construit
+    prepared = true;
     pausedByAuto = false;
     autoPauseToken++;
     setStatus('Idle');
@@ -231,12 +247,8 @@
       const iv = setInterval(()=>{
         n--;
         if (n <= 0){
-          clearInterval(iv);
-          el.remove();
-          res();
-        } else {
-          el.textContent = n;
-        }
+          clearInterval(iv); el.remove(); res();
+        } else el.textContent = n;
       }, 1000);
     });
   }
@@ -271,17 +283,14 @@
   }
   function manualScroll(delta){
     viewport.scrollBy({ top: delta, behavior: 'smooth' });
+    clampToMaxEnd();
     updateActiveWord();
   }
 
-  // Dim/FS/Mirror
   function toggleDim(){ overlay.classList.toggle('dim'); }
-  function toggleFS(){
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
-    else document.exitFullscreen?.();
-  }
+  function toggleFS(){ if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
 
-  // ===== Voice (RO + chei EN uzuale) =====
+  // ===== Voice (RO + cuvinte EN uzuale) =====
   function toggleVoice(){
     if (voiceOn){ stopVoice(); return; }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -305,12 +314,8 @@
       else if (has('mărește textul','mareste textul','zoom in','bigger')) { zoom(+2); }
       else if (has('micșorează textul','micsoreaza textul','zoom out','smaller')) { zoom(-2); }
       else if (has('mirror','oglindă','oglinda')) { mirrorH = !mirrorH; document.body.classList.toggle('mirror-h', mirrorH); }
-
-      // feedback scurt pe buton
-      btnVoice.classList.add('accent');
-      setTimeout(()=>btnVoice.classList.remove('accent'), 180);
+      btnVoice.classList.add('accent'); setTimeout(()=>btnVoice.classList.remove('accent'), 180);
     };
-
     recognition.onend = () => { if (voiceOn) recognition.start(); };
     recognition.start();
     voiceOn = true;
@@ -320,19 +325,16 @@
   function stopVoice(){
     voiceOn = false;
     btnVoice.classList.remove('accent');
-    if (recognition){
-      recognition.onend = null;
-      recognition.stop();
-      recognition = null;
-    }
+    if (recognition){ recognition.onend = null; recognition.stop(); recognition = null; }
     setStatus('Voice OFF');
   }
 
   // ===== Gesturi mobile =====
   const isInteractive = el =>
-    el.closest('.sheet') || el.closest('.dock') || el.closest('.topbar') || el.closest('.floatctl') || el.closest('textarea') || el.closest('button') || el.closest('input');
+    el.closest('.sheet') || el.closest('.dock') || el.closest('.topbar') || el.closest('.floatctl') ||
+    el.closest('textarea') || el.closest('button') || el.closest('input');
 
-  // dublu-tap start/pause (ignorat în UI/Sheet)
+  // dublu-tap start/pause (ignorat pe UI)
   let lastTap = 0;
   document.addEventListener('touchend', (e)=>{
     if (isInteractive(e.target)) return;
@@ -343,7 +345,7 @@
     lastTap = now;
   }, {passive:true});
 
-  // pinch zoom (ignorat în sheet)
+  // pinch zoom
   let pinchDist0 = null;
   document.addEventListener('touchmove', (e)=>{
     if (isInteractive(e.target)) return;
@@ -361,7 +363,7 @@
   }, {passive:true});
   document.addEventListener('touchend', ()=>{ if (pinchDist0!==null) pinchDist0=null; }, {passive:true});
 
-  // swipe sus/jos = scroll manual (pe zona de text)
+  // swipe sus/jos = scroll manual
   let startY=null;
   viewport.addEventListener('touchstart', (e)=>{ if(e.touches.length===1){ startY=e.touches[0].clientY; }}, {passive:true});
   viewport.addEventListener('touchmove', (e)=>{
@@ -398,7 +400,6 @@
   fontSize.addEventListener('input', applyStyleFromControls);
   lineHeight.addEventListener('input', applyStyleFromControls);
   hPadding.addEventListener('input', applyStyleFromControls);
-  countdownInput.addEventListener('input', ()=>{}); // doar citire în startRun
 
   btnPrepare.addEventListener('click', prepareRun);
 
@@ -418,7 +419,7 @@
     URL.revokeObjectURL(a.href);
   });
 
-  // Sheet open/close (swipe)
+  // Sheet open/close
   let sheetOpen = false, sy=null;
   sheet.addEventListener('touchstart', e=>{ sy=e.touches[0].clientY; }, {passive:true});
   sheet.addEventListener('touchmove', e=>{
@@ -427,7 +428,6 @@
     if (!sheetOpen && dy < -30) { sheet.classList.add('open'); sheetOpen=true; sy=e.touches[0].clientY; }
     if (sheetOpen && dy > 30) { sheet.classList.remove('open'); sheetOpen=false; sy=e.touches[0].clientY; }
   }, {passive:true});
-  // tap pe status => toggle sheet
   qs('.status').addEventListener('click', ()=>{
     sheetOpen = !sheetOpen;
     sheet.classList.toggle('open', sheetOpen);
@@ -435,15 +435,19 @@
 
   // Actualizează highlight la orice scroll/resize/orientare
   viewport.addEventListener('scroll', updateActiveWord, {passive:true});
-  new ResizeObserver(updateActiveWord).observe(viewport);
-  window.addEventListener('orientationchange', () => setTimeout(updateActiveWord, 300));
+  new ResizeObserver(() => { clampToMaxEnd(); updateActiveWord(); }).observe(viewport);
+  window.addEventListener('orientationchange', () => setTimeout(()=>{ clampToMaxEnd(); updateActiveWord(); }, 300));
 
-  // Cleanup cameră la ieșire
+  // Cleanup cameră
   window.addEventListener('beforeunload', ()=>{
     if (cam.srcObject) cam.srcObject.getTracks().forEach(t=>t.stop());
   });
 
   // ===== Init =====
+
+  // IMPORTANT: fac overlay interactiv ca să poți derula cu degetul
+  overlay.style.pointerEvents = 'auto';  // (dacă vrei să nu blocheze video, poți seta doar viewport.style.pointerEvents='auto')
+
   editor.value = `Bun venit la varianta mobilă cu OVERLAY + VOICE.
 
 Comenzi (RO/EN):
