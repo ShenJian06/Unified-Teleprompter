@@ -1,0 +1,283 @@
+/* ===== Unified Teleprompter — 2025 Mobile Skin ===== */
+:root{
+  /* Core palette */
+  --bg:#05070b;            /* OLED-friendly */
+  --ink:#eaf1ff;
+  --muted:#93a0b8;
+  --line:#273149;
+
+  /* Accents (2025 vibe) */
+  --accent-1:#7c5cff;      /* violet */
+  --accent-2:#22e0a6;      /* mint/cyan */
+  --accent-3:#3aa3ff;      /* sky */
+  --danger:#ef4444;
+
+  /* Effects */
+  --glass: rgba(10,14,24,.55);
+  --glass-strong: rgba(10,14,24,.72);
+  --blur: blur(14px);
+  --ring: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  --ring-2: linear-gradient(135deg, #2e3a59, #1e2438);
+
+  /* Safe areas */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+
+/* Dark/Light auto (opțional) */
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f7f9ff;
+    --ink:#0a0f1a;
+    --muted:#4c5a77;
+    --line:#d9e0f2;
+    --glass: rgba(255,255,255,.65);
+    --glass-strong: rgba(255,255,255,.78);
+    --blur: blur(18px);
+  }
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.45 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+/* App root */
+.app{position:fixed; inset:0; overflow:hidden; isolation:isolate}
+
+/* ===== CAMERA ===== */
+.cam{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  transform:scaleX(-1); /* selfie view */
+  background:#000;
+  filter:saturate(1.05) contrast(1.03);
+}
+
+/* ===== OVERLAY TEXT ===== */
+.overlay{
+  position:absolute; inset:0; display:flex; align-items:stretch; justify-content:center;
+  pointer-events:none;
+  /* subtle vignette for legibility on bright scenes */
+  background:
+    radial-gradient(1200px 700px at 50% -10%, rgba(0,0,0,.28), transparent 55%),
+    radial-gradient(1000px 800px at 50% 110%, rgba(0,0,0,.25), transparent 50%);
+}
+
+.viewport{
+  position:relative; width:100%; max-width:1100px; height:100%; overflow:auto;
+  padding: calc(8vh + var(--safe-top)) clamp(6%, 9vw, 12%) calc(16vh + var(--safe-bottom));
+  scroll-behavior:smooth;
+  overscroll-behavior:contain;
+}
+
+/* Tipografie fluidă + balans pentru citire */
+.prompt{
+  position:relative;
+  font-size: clamp(28px, 4.2vw, 44px);
+  line-height: 1.65;
+  letter-spacing:.18px;
+  color:#ffffff;
+  text-shadow:
+    0 1px 1px rgba(0,0,0,.7),
+    0 0 22px rgba(0,0,0,.45);
+  hanging-punctuation:first allow-end;
+}
+.word{opacity:.82; transition:opacity .16s ease}
+.word.active{opacity:1}
+
+/* Linie ghid (neon subtle) */
+.pointer{
+  position:sticky; top:50%; transform:translateY(-50%);
+  height:0; width:100%;
+  border-top:2px dashed color-mix(in oklab, white 70%, transparent);
+  filter: drop-shadow(0 0 6px rgba(124,92,255,.35));
+}
+
+/* ===== TOP BAR (glass) ===== */
+.topbar{
+  position:absolute; left:0; right:0; top:0; height:auto;
+  padding: max(8px, var(--safe-top)) 12px 10px;
+  display:flex; align-items:center; gap:10px;
+  pointer-events:auto;
+  backdrop-filter: var(--blur);
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,0));
+}
+.status{
+  font-size:12.5px; color:#d8e3ff; padding:7px 12px; border-radius:999px;
+  background:var(--glass-strong);
+  border:1px solid color-mix(in oklab, var(--line) 70%, transparent);
+  box-shadow: 0 6px 22px rgba(0,0,0,.35);
+  /* gradient ring */
+  position:relative;
+}
+.status::before{
+  content:""; position:absolute; inset:-1px;
+  border-radius:inherit; padding:1px; pointer-events:none;
+  background:var(--ring);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+
+/* ===== BUTTONS (2025 island) ===== */
+.btn{
+  --bg-btn: color-mix(in oklab, #0d1426 85%, var(--accent-1) 15%);
+  border:1px solid color-mix(in oklab, var(--line) 70%, transparent);
+  color:#eaf1ff; background:var(--glass);
+  padding:12px 16px; border-radius:14px; font-weight:700; letter-spacing:.2px;
+  backdrop-filter:var(--blur);
+  box-shadow:
+    0 8px 24px rgba(0,0,0,.35),
+    inset 0 0 0 1px rgba(255,255,255,.02);
+  transition: transform .08s ease, filter .2s ease, background .2s ease;
+}
+.btn.ghost{background:rgba(12,18,36,.45)}
+.btn.accent{
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent-1) 75%, #000 25%), color-mix(in oklab, var(--accent-3) 60%, #000 40%));
+  border-color: color-mix(in oklab, var(--accent-1) 45%, var(--line) 55%);
+  color:#fff;
+}
+.btn:active{transform: translateY(1px) scale(.99)}
+.btn:focus-visible{
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.08),
+    0 0 0 4px color-mix(in oklab, var(--accent-1) 60%, var(--accent-2) 40%);
+}
+
+/* ===== BOTTOM DOCK ===== */
+.dock{
+  position:absolute; left:0; right:0; bottom:0;
+  padding: 12px 12px max(12px, var(--safe-bottom));
+  display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+  pointer-events:auto;
+  backdrop-filter: var(--blur);
+  background:
+    radial-gradient(1200px 80% at 50% 100%, rgba(0,0,0,.5), rgba(0,0,0,0) 60%),
+    linear-gradient(0deg, rgba(0,0,0,.45), rgba(0,0,0,0));
+}
+
+/* ===== FLOATING CONTROLS (central island) ===== */
+.floatctl{
+  position:absolute; left:50%; bottom:calc(86px + var(--safe-bottom));
+  transform:translateX(-50%);
+  display:flex; gap:12px; pointer-events:auto;
+  padding:8px; border-radius:18px;
+  background: var(--glass-strong);
+  border:1px solid color-mix(in oklab, var(--line) 70%, transparent);
+  backdrop-filter: var(--blur);
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  animation: floatIn .25s ease both;
+}
+@keyframes floatIn{ from{ transform:translate(-50%,10px); opacity:0 } to{ transform:translate(-50%,0); opacity:1 } }
+.group{display:flex; gap:8px}
+.pill{
+  border-radius:999px; padding:12px 16px; font-weight:800;
+  background:linear-gradient(180deg, #121a33, #0f1429);
+  border:1px solid color-mix(in oklab, var(--line) 70%, transparent);
+}
+.pill:hover{filter:brightness(1.07)}
+.pill:active{transform:translateY(1px)}
+
+/* ===== BOTTOM SHEET (editor+setări) ===== */
+.sheet{
+  position:absolute; left:0; right:0; bottom:0; height:64vh;
+  transform:translateY(62vh);
+  background: linear-gradient(180deg, rgba(10,14,24,.92), rgba(10,14,24,.98));
+  border-top:1px solid color-mix(in oklab, var(--line) 70%, transparent);
+  border-top-left-radius:18px; border-top-right-radius:18px;
+  transition: transform .28s cubic-bezier(.2,.7,.2,1);
+  pointer-events:auto;
+  box-shadow: 0 -10px 40px rgba(0,0,0,.45);
+}
+.sheet.open{ transform:translateY(0) }
+.sheet-handle{
+  width:58px; height:6px; border-radius:999px;
+  margin:10px auto;
+  background: linear-gradient(90deg, var(--ring-2));
+}
+.sheet-inner{ padding:10px 12px 16px }
+.sheet-row{ margin-bottom:10px }
+
+textarea#editor{
+  width:100%; height:24vh; resize:vertical;
+  border:1px solid color-mix(in oklab, var(--line) 70%, transparent);
+  border-radius:14px; background:#0d1326; color:#e8eeff;
+  padding:12px; outline:none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+}
+textarea#editor:focus{
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    0 0 0 4px color-mix(in oklab, var(--accent-1) 35%, var(--accent-2) 65%, transparent 20%);
+}
+
+/* Controls */
+.controls-grid{
+  display:grid; grid-template-columns:1fr; gap:10px; margin-top:8px;
+}
+.controls-grid label{font-size:13px; color:var(--muted)}
+.controls-grid input[type=range],
+.controls-grid input[type=number]{
+  width:100%; -webkit-appearance:none; appearance:none;
+  background:#0f152e; color:#fff;
+  border:1px solid color-mix(in oklab, var(--line) 70%, transparent);
+  border-radius:12px; height:42px; padding:0 10px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+}
+
+/* Fancy range track & thumb */
+.controls-grid input[type=range]{
+  height:40px; padding:0; background:transparent;
+}
+.controls-grid input[type=range]::-webkit-slider-runnable-track{
+  height:8px; border-radius:999px;
+  background: linear-gradient(90deg, color-mix(in oklab, #1a2442 80%, var(--accent-1) 20%), #182039);
+}
+.controls-grid input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none;
+  width:22px; height:22px; border-radius:50%;
+  background: radial-gradient( circle at 30% 30%, #fff, #d9e2ff 60%, #aab8ff 100%);
+  border:2px solid #1a2140; margin-top:-7px;
+  box-shadow: 0 4px 12px rgba(124,92,255,.45);
+}
+
+/* Hint */
+.hint{margin-top:8px; font-size:13px; color:#c8d3ee; opacity:.9}
+
+/* ===== COUNTDOWN ===== */
+.countdown{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  font:800 clamp(64px, 14vw, 140px)/1 Inter, system-ui;
+  color:white; letter-spacing:.02em;
+  background: radial-gradient(60% 60% at 50% 50%, rgba(0,0,0,.55), rgba(0,0,0,.25) 60%, transparent 100%);
+  backdrop-filter: blur(6px);
+  animation: pop .32s ease both;
+}
+@keyframes pop{ from{ transform:scale(.96); opacity:0 } to{ transform:scale(1); opacity:1 } }
+
+/* ===== DIMMER MODE ===== */
+.overlay.dim .viewport{
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55));
+  border-left:1px solid rgba(255,255,255,.06);
+  border-right:1px solid rgba(255,255,255,.06);
+}
+
+/* ===== MIRROR ===== */
+.mirror-h .prompt{ transform: scaleX(-1); }
+.mirror-v .prompt{ transform: scaleY(-1); }
+
+/* ===== RESPONSIVE TWEAKS ===== */
+@media (max-width:420px){
+  .dock{ grid-template-columns:repeat(4,1fr); gap:8px }
+  .btn{ padding:11px 12px; border-radius:12px }
+  .floatctl{ bottom: calc(80px + var(--safe-bottom)); }
+}
+
+/* ===== MOTION PREFERENCES ===== */
+@media (prefers-reduced-motion: reduce){
+  *{ transition:none !important; animation:none !important }
+}
