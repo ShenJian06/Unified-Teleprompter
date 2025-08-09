@@ -1,4 +1,4 @@
-/* Unified Teleprompter Mobile (Overlay + Voice) — STOP la ultimele 2 rânduri + scroll manual OK */
+/* Unified Teleprompter Mobile (Overlay + Voice) — transform-based scrolling (no jitter) */
 (() => {
   const qs = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
@@ -54,6 +54,7 @@
   let lastTs = 0;
   let scrollPxPerSec = +speed.value;
   let rafId = null;
+
   let mirrorH = false, mirrorV = false;
 
   // Voice
@@ -64,30 +65,32 @@
   let autoPauseToken = 0;
   let pausedByAuto = false;
 
+  // Transform-based scroll state
+  let offsetY = 0;          // cât am "urcat" textul (px)
+  let maxOffsetY = 0;       // limita ca ultimele 2 rânduri să fie vizibile
+  let usingTransform = false;
+
   // ===== Helpers =====
   const clamp = (n,min,max) => Math.max(min, Math.min(max, n));
   const setStatus = t => { statusChip.textContent = t; };
 
-  // Linie de bază pentru „ultimele 2 rânduri”
   function getLineHeightPx(){
     const cs = getComputedStyle(prompt);
     let lh = cs.lineHeight;
-    if (lh === 'normal'){
-      // fallback simplu: factor 1.3 din mărimea fontului
-      lh = parseFloat(cs.fontSize) * 1.3;
-    } else {
-      lh = parseFloat(lh);
-    }
+    if (lh === 'normal') lh = parseFloat(cs.fontSize) * 1.3;
+    else lh = parseFloat(lh);
     return lh || 32;
   }
-  function getMaxAutoScrollTop(){
-    // oprește când ultimele 2 rânduri sunt vizibile
-    const max = prompt.offsetHeight - viewport.clientHeight - getLineHeightPx()*2;
-    return Math.max(0, Math.floor(max));
+  function recomputeMaxOffset(){
+    // când animăm cu transform, containerul nu mai derulează; limităm cu offset
+    maxOffsetY = Math.max(0, Math.floor(prompt.offsetHeight - viewport.clientHeight - getLineHeightPx()*2));
   }
-  function clampToMaxEnd(){
-    const maxTop = getMaxAutoScrollTop();
-    if (viewport.scrollTop > maxTop) viewport.scrollTop = maxTop;
+  function applyTransform(){
+    // GPU-friendly, previne jank
+    prompt.style.transform = `translate3d(0, ${-offsetY}px, 0)`;
+  }
+  function clearTransform(){
+    prompt.style.transform = 'translate3d(0,0,0)';
   }
 
   function applyStyleFromControls(){
@@ -98,7 +101,13 @@
     fontVal.textContent  = String(fontSize.value);
     lhVal.textContent    = (+lineHeight.value).toFixed(1);
     padVal.textContent   = String(hPadding.value);
-    clampToMaxEnd();        // dacă ai mărit fontul, recalculează limită
+
+    // La schimbarea stilului, recalculăm limitele și realiniem
+    if (usingTransform){
+      recomputeMaxOffset();
+      offsetY = clamp(offsetY, 0, maxOffsetY);
+      applyTransform();
+    }
     updateActiveWord();
   }
 
@@ -166,13 +175,12 @@
 
     handleAutoPauses();
 
-    const maxTop = getMaxAutoScrollTop();
-    const nextTop = Math.min(viewport.scrollTop + scrollPxPerSec * dt, maxTop);
-    viewport.scrollTop = nextTop;
-
+    // animăm prin transform, nu cu scrollTop
+    offsetY = Math.min(offsetY + scrollPxPerSec * dt, maxOffsetY);
+    applyTransform();
     updateActiveWord();
 
-    if (nextTop >= maxTop - 0.5){
+    if (offsetY >= maxOffsetY - 0.5){
       stopRun();
       setStatus('Done');
       return;
@@ -180,9 +188,31 @@
     rafId = requestAnimationFrame(tick);
   }
 
+  function enableTransformMode(){
+    usingTransform = true;
+    viewport.classList.add('playing');
+    // blochează scrollul nativ ca să nu concureze cu animarea
+    viewport.style.overflow = 'hidden';
+    // aliniază limite + reset transform
+    recomputeMaxOffset();
+    applyTransform();
+  }
+  function disableTransformMode(){
+    usingTransform = false;
+    viewport.classList.remove('playing');
+    viewport.style.overflow = 'auto';
+    clearTransform();
+    // traducem offset-ul curent în scrollTop echivalent, ca să rămânem în același loc
+    viewport.scrollTop = offsetY;
+  }
+
   function prepareRun(){
     buildPromptFromEditor();
+    // reset poziții
+    offsetY = 0;
+    clearTransform();
     viewport.scrollTop = 0;
+
     qsa('.pause').forEach(p => delete p.dataset.done);
     prepared = true;
     setStatus('Ready');
@@ -192,8 +222,19 @@
   async function startRun(){
     if (!prepared) prepareRun();
 
+    // Countdown opțional
     const cd = clamp(+countdownInput.value || 0, 0, 10);
     if (cd > 0) await countdownOverlay(cd);
+
+    // intrăm în modul transform pentru rulare fluidă
+    enableTransformMode();
+
+    // dacă user a derulat manual înainte, sincronizează offset-ul
+    offsetY = viewport.scrollTop;
+    viewport.scrollTop = 0; // nu mai folosim scroll pe durata rulării
+    recomputeMaxOffset();
+    offsetY = clamp(offsetY, 0, maxOffsetY);
+    applyTransform();
 
     running = true;
     pausedByAuto = false;
@@ -203,7 +244,7 @@
   }
 
   function pauseRun(manual = true){
-    if (!running) { setStatus('Paused'); return; }
+    if (!running){ setStatus('Paused'); return; }
     running = false;
     cancelAnimationFrame(rafId);
     if (manual){
@@ -211,10 +252,16 @@
       autoPauseToken++;
     }
     setStatus('Paused');
+    // dezactivăm transform mode ca să poți derula nativ fără jank
+    disableTransformMode();
   }
 
   function resumeRun(){
     if (running) return;
+    // intrăm din nou în transform mode; preluăm poziția curentă din scrollTop
+    offsetY = viewport.scrollTop;
+    enableTransformMode();
+
     running = true;
     lastTs = 0;
     setStatus('Running');
@@ -228,6 +275,8 @@
 
   function resetRun(){
     stopRun();
+    disableTransformMode();
+    offsetY = 0;
     viewport.scrollTop = 0;
     qsa('.pause').forEach(p => delete p.dataset.done);
     prepared = true;
@@ -282,9 +331,15 @@
     fontSize.value = v; applyStyleFromControls();
   }
   function manualScroll(delta){
-    viewport.scrollBy({ top: delta, behavior: 'smooth' });
-    clampToMaxEnd();
-    updateActiveWord();
+    if (usingTransform){
+      // când rulează, ajustăm offset-ul (nu scrollTop) ca să nu inducem jank
+      offsetY = clamp(offsetY + delta, 0, maxOffsetY);
+      applyTransform();
+      updateActiveWord();
+    } else {
+      viewport.scrollBy({ top: delta, behavior: 'auto' });
+      updateActiveWord();
+    }
   }
 
   function toggleDim(){ overlay.classList.toggle('dim'); }
@@ -314,6 +369,7 @@
       else if (has('mărește textul','mareste textul','zoom in','bigger')) { zoom(+2); }
       else if (has('micșorează textul','micsoreaza textul','zoom out','smaller')) { zoom(-2); }
       else if (has('mirror','oglindă','oglinda')) { mirrorH = !mirrorH; document.body.classList.toggle('mirror-h', mirrorH); }
+
       btnVoice.classList.add('accent'); setTimeout(()=>btnVoice.classList.remove('accent'), 180);
     };
     recognition.onend = () => { if (voiceOn) recognition.start(); };
@@ -361,21 +417,17 @@
       }
     }
   }, {passive:true});
-  document.addEventListener('touchend', ()=>{ if (pinchDist0!==null) pinchDist0=null; }, {passive:true});
+  document.addEventListener('touchend', ()=>{ pinchDist0=null; }, {passive:true});
 
-  // swipe sus/jos = scroll manual
-  let startY=null;
-  viewport.addEventListener('touchstart', (e)=>{ if(e.touches.length===1){ startY=e.touches[0].clientY; }}, {passive:true});
-  viewport.addEventListener('touchmove', (e)=>{
-    if (startY!==null && e.touches.length===1){
-      const dy = e.touches[0].clientY - startY;
-      if (Math.abs(dy) > 6){
-        manualScroll(-dy);
-        startY = e.touches[0].clientY;
-      }
-    }
+  // touch pe viewport: când atingi în timpul rulării, punem pauză temporar
+  let wasRunningBeforeTouch = false;
+  viewport.addEventListener('touchstart', ()=>{
+    wasRunningBeforeTouch = running;
+    if (running) pauseRun(false);
   }, {passive:true});
-  viewport.addEventListener('touchend', ()=> startY=null, {passive:true});
+  viewport.addEventListener('touchend', ()=>{
+    setTimeout(()=>{ if (wasRunningBeforeTouch && !running) resumeRun(); }, 220);
+  }, {passive:true});
 
   // ===== Wiring =====
   btnCam.addEventListener('click', toggleCamera);
@@ -433,10 +485,10 @@
     sheet.classList.toggle('open', sheetOpen);
   });
 
-  // Actualizează highlight la orice scroll/resize/orientare
+  // Actualizează highlight/limite la orice schimbare
   viewport.addEventListener('scroll', updateActiveWord, {passive:true});
-  new ResizeObserver(() => { clampToMaxEnd(); updateActiveWord(); }).observe(viewport);
-  window.addEventListener('orientationchange', () => setTimeout(()=>{ clampToMaxEnd(); updateActiveWord(); }, 300));
+  new ResizeObserver(() => { recomputeMaxOffset(); if(usingTransform){ offsetY = clamp(offsetY,0,maxOffsetY); applyTransform(); } updateActiveWord(); }).observe(viewport);
+  window.addEventListener('orientationchange', () => setTimeout(()=>{ recomputeMaxOffset(); if(usingTransform){ offsetY = clamp(offsetY,0,maxOffsetY); applyTransform(); } updateActiveWord(); }, 300));
 
   // Cleanup cameră
   window.addEventListener('beforeunload', ()=>{
@@ -444,9 +496,9 @@
   });
 
   // ===== Init =====
-
-  // IMPORTANT: fac overlay interactiv ca să poți derula cu degetul
-  overlay.style.pointerEvents = 'auto';  // (dacă vrei să nu blocheze video, poți seta doar viewport.style.pointerEvents='auto')
+  // doar viewportul primește gesturi (evită conflictele cu video)
+  overlay.style.pointerEvents = 'none';
+  viewport.style.pointerEvents = 'auto';
 
   editor.value = `Bun venit la varianta mobilă cu OVERLAY + VOICE.
 
