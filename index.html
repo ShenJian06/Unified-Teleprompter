@@ -1,82 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="ro">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Teleprompter</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Unified Teleprompter Mobile (Overlay + Voice)</title>
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="theme-color" content="#0b0f18">
 </head>
-
 <body>
+  <div class="app">
 
-  <!-- === CAMERA VIEW & CONTROLS === -->
-  <div id="camera-container" style="display: none;">
-    <video id="camera" autoplay muted playsinline></video>
-    <div id="camera-controls">
-      <button id="switchCameraBtn" title="Switch Camera"><i class="fas fa-camera-rotate"></i></button>
-      <button id="recordBtn" title="Record"><i class="fas fa-circle"></i></button>
-      <button id="pauseBtn" title="Pause"><i class="fas fa-pause"></i></button>
-      <button id="stopBtn" title="Stop"><i class="fas fa-square"></i></button>
-      <select id="filterSelect" title="Apply Filter">
-        <option value="none">None</option>
-        <option value="noir">Noir</option>
-        <option value="sepia">Vintage Sepia</option>
-        <option value="cold">Cold Blue</option>
-        <option value="warm">Warm Sunset</option>
-        <option value="bw">High Contrast B&W</option>
-        <option value="grain">Film Grain</option>
-        <option value="cartoon">Cartoon</option>
-        <option value="invert">Invert</option>
-        <option value="night">Night Vision</option>
-        <option value="glitch">Glitch RGB</option>
-        <option value="neon">Cyberpunk Neon</option>
-        <option value="vhs">Retro VHS</option>
-        <option value="glow">Soft Glow</option>
-        <option value="cinematic">Cinematic Teal & Orange</option>
-        <option value="dreamy">Dreamy Blur</option>
-        <option value="saturate">High Saturation</option>
-        <option value="desaturate">Low Saturation</option>
-        <option value="infrared">Infrared</option>
-        <option value="duotone">Duotone</option>
-        <option value="matrix">Matrix Green</option>
-      </select>
-    </div>
-  </div>
+    <!-- CAMERA FULLSCREEN -->
+    <video id="cam" class="cam" playsinline muted></video>
 
-  <!-- === PROMPTER === -->
-  <div id="prompter" contenteditable="true">
-    Write or insert text here...
-  </div>
-
-  <!-- === CONTROLS === -->
-  <div id="controls">
-    <button id="cameraToggleBtn" title="Camera"><i class="fas fa-video"></i></button>
-    <button id="voiceBtn" title="Voice Commands"><i class="fas fa-microphone"></i></button>
-    <button id="startBtn" title="Play/Pause"><i class="fas fa-play"></i></button>
-    <button id="resumeScrollBtn" title="Reset Scroll"><i class="fas fa-rotate-left"></i></button>
-    <button id="toggleMirrorBtn" title="Mirror Text"><i class="fas fa-arrows-left-right"></i></button>
-    <button id="themeToggleBtn" title="Toggle Theme"><i class="fas fa-adjust"></i></button>
-    <button id="uploadTxtBtn" title="Upload .txt"><i class="fas fa-file-upload"></i></button>
-    <input type="file" id="uploadInput" accept=".txt" style="display:none">
-    <button id="downloadTxtBtn" title="Download .txt"><i class="fas fa-file-download"></i></button>
-    <!-- ===<button id="toggleUIBtn" title="Hide UI"><i class="fas fa-eye-slash"></i></button> === -->
-    
-
-
-    <div class="slider-group">
-      <label for="speed">Speed: <span id="speedValue">40</span></label>
-      <input type="range" id="speed" min="10" max="200" value="40" title="Speed">
+    <!-- OVERLAY TELEPROMPTER -->
+    <div class="overlay" id="overlay">
+      <div class="viewport" id="viewport">
+        <div class="pointer" id="pointer"></div>
+        <div class="prompt" id="prompt"></div>
+      </div>
     </div>
 
-    <div class="slider-group">
-      <label for="fontSize">Font Size: <span id="fontSizeValue">32</span></label>
-      <input type="range" id="fontSize" min="10" max="200" value="32" title="Font Size">
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="status" id="statusChip">Idle</div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btnVoice" title="Comenzi vocale">🎤</button>
+      <button class="btn ghost" id="btnMirrorH" title="Mirror orizontal">↔︎</button>
+      <button class="btn ghost" id="btnMirrorV" title="Mirror vertical">↕︎</button>
+      <button class="btn ghost" id="btnDim" title="Fundal overlay">☾</button>
+      <button class="btn ghost" id="btnFS" title="Ecran complet">⤢</button>
     </div>
 
-    <div id="scrollTimer" title="Estimated Scroll Time">--</div>
-  </div>
+    <!-- BOTTOM DOCK -->
+    <div class="dock">
+      <button class="btn" id="btnCam">Camera</button>
+      <button class="btn accent" id="btnStart">Start</button>
+      <button class="btn" id="btnPause">Pauză</button>
+      <button class="btn" id="btnReset">Reset</button>
+    </div>
 
-  <!-- === SCRIPT === -->
-  <script src="script.js"></script>
+    <!-- FLOATING CONTROLS -->
+    <div class="floatctl">
+      <div class="group">
+        <button class="btn pill" id="fcZoomOut" aria-label="Zoom out">A−</button>
+        <button class="btn pill" id="fcZoomIn" aria-label="Zoom in">A＋</button>
+      </div>
+      <div class="group">
+        <button class="btn pill" id="fcSlower" aria-label="Slower">−Speed</button>
+        <button class="btn pill" id="fcFaster" aria-label="Faster">+Speed</button>
+      </div>
+      <div class="group">
+        <button class="btn pill" id="fcUp" aria-label="Scroll up">▲</button>
+        <button class="btn pill" id="fcDown" aria-label="Scroll down">▼</button>
+      </div>
+    </div>
+
+    <!-- SHEET: EDITOR + SETĂRI -->
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-inner">
+        <div class="sheet-row">
+          <textarea id="editor" spellcheck="false" placeholder="Scrie sau lipește textul aici...
+Folosește [[PAUSE 2s]] pentru pauze cronometrate."></textarea>
+        </div>
+
+        <div class="controls-grid">
+          <label>Viteză: <b><span id="speedVal">80</span> px/s</b></label>
+          <input type="range" id="speed" min="10" max="300" step="1" value="80">
+
+          <label>Mărime font: <b><span id="fontVal">40</span> px</b></label>
+          <input type="range" id="fontSize" min="22" max="84" step="1" value="40">
+
+          <label>Înălțime rând: <b><span id="lhVal">1.6</span>×</b></label>
+          <input type="range" id="lineHeight" min="1.2" max="2.2" step="0.1" value="1.6">
+
+          <label>Margini laterale: <b><span id="padVal">10</span>%</b></label>
+          <input type="range" id="hPadding" min="0" max="20" step="1" value="10">
+
+          <label>Countdown (s)</label>
+          <input type="number" id="countdown" min="0" max="10" step="1" value="3">
+        </div>
+
+        <div class="row">
+          <button class="btn" id="btnLoad">Încarcă .txt</button>
+          <input type="file" id="fileInput" accept=".txt,.md,.rtf" hidden>
+          <button class="btn" id="btnSave">Salvează .txt</button>
+          <button class="btn ghost" id="btnPrepare">Pregătește</button>
+        </div>
+
+        <div class="hint">
+          Voice (RO/EN): „start”, „pauză/stop”, „mai repede/faster”, „mai încet/slower”, „derulează sus/jos / scroll up/down”, „mărește/micșorează textul / zoom in/out”, „de la început / stop again”.
+          Gesturi: pinch=zoom, dublu-tap=start/pauză, swipe sus/jos=scroll.
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script src="app.js"></script>
 </body>
 </html>
